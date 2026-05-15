@@ -203,15 +203,24 @@ st.subheader("📷 Live Webcam")
 
 webrtc_streamer(
     key="sign-detection",
+
+    rtc_configuration={
+        "iceServers": [
+            {"urls": ["stun:stun.l.google.com:19302"]}
+        ]
+    },
+
     video_processor_factory=SignDetector,
+
     media_stream_constraints={
         "video": {
-            "width": 640,
-            "height": 480
+            "width": 320,
+            "height": 240
         },
         "audio": False
     },
-    async_processing=True
+
+    async_processing=False
 )
 
 st.markdown('</div>', unsafe_allow_html=True)
