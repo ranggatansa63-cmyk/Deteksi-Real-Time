@@ -3,7 +3,7 @@ import cv2
 import numpy as np
 import tensorflow as tf
 import json
-from streamlit_webrtc import webrtc_streamer, VideoTransformerBase
+from streamlit_webrtc import webrtc_streamer, VideoProcessorBase
 import av
 import gdown
 import os
@@ -103,9 +103,9 @@ labels = {v: k for k, v in class_indices.items()}
 IMG_SIZE = 128
 
 # =========================================
-# VIDEO TRANSFORMER
+# VIDEO PROCESSOR
 # =========================================
-class SignDetector(VideoTransformerBase):
+class SignDetector(VideoProcessorBase):
 
     def recv(self, frame):
 
@@ -153,9 +153,7 @@ class SignDetector(VideoTransformerBase):
 
         label = labels[class_id]
 
-        # =========================================
-        # RESULT TEXT
-        # =========================================
+        # RESULT
         cv2.putText(
             img,
             f"Huruf : {label}",
@@ -205,23 +203,13 @@ st.subheader("📷 Live Webcam")
 
 webrtc_streamer(
     key="sign-detection",
-    video_transformer_factory=SignDetector,
+    video_processor_factory=SignDetector,
     media_stream_constraints={
         "video": {
             "width": 640,
             "height": 480
         },
         "audio": False
-    },
-    video_html_attrs={
-        "style": {
-            "width": "700px",
-            "margin": "0 auto",
-            "display": "block",
-            "border-radius": "15px"
-        },
-        "autoPlay": True,
-        "controls": False
     },
     async_processing=True
 )
