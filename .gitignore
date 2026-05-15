@@ -1,0 +1,8 @@
+bisindo_env/
+venv/
+.venv/
+
+__pycache__/
+*.pyc
+
+model_bisindo_fixed.h5
