@@ -67,11 +67,11 @@ header {
 # =========================================
 # DOWNLOAD MODEL
 # =========================================
-MODEL_PATH = "model_bisindo_fixed.h5"
+MODEL_PATH = "model_bisindo.tflite"
 
 if not os.path.exists(MODEL_PATH):
 
-    file_id = "1vAGRAqIy8lHRttvQS0uRHPxSFZIjxyXb"
+    file_id = "1HHdgaCnOeD4V1mvnR_mS5mi94gRU6AuX"
 
     url = f"https://drive.google.com/uc?id={file_id}"
 
@@ -84,12 +84,16 @@ if not os.path.exists(MODEL_PATH):
         )
 
 # =========================================
-# LOAD MODEL
+# LOAD TFLITE MODEL
 # =========================================
-model = tf.keras.models.load_model(
-    MODEL_PATH,
-    compile=False
+interpreter = tf.lite.Interpreter(
+    model_path=MODEL_PATH
 )
+
+interpreter.allocate_tensors()
+
+input_details = interpreter.get_input_details()
+output_details = interpreter.get_output_details()
 
 # =========================================
 # LOAD LABEL
@@ -106,6 +110,12 @@ IMG_SIZE = 128
 # VIDEO PROCESSOR
 # =========================================
 class SignDetector(VideoProcessorBase):
+
+    def __init__(self):
+
+        self.frame_count = 0
+        self.last_label = ""
+        self.last_conf = 0
 
     def recv(self, frame):
 
@@ -141,19 +151,51 @@ class SignDetector(VideoProcessorBase):
         roi = img[y1:y2, x1:x2]
 
         # PREPROCESS
-        resized = cv2.resize(roi, (IMG_SIZE, IMG_SIZE))
+        resized = cv2.resize(
+            roi,
+            (IMG_SIZE, IMG_SIZE)
+        )
+
         resized = resized / 255.0
-        resized = np.expand_dims(resized, axis=0)
 
-        # PREDICT
-        preds = model.predict(resized, verbose=0)
+        resized = np.expand_dims(
+            resized,
+            axis=0
+        )
 
-        class_id = np.argmax(preds)
-        confidence = np.max(preds)
+        # =========================================
+        # FRAME SKIPPING
+        # =========================================
+        self.frame_count += 1
 
-        label = labels[class_id]
+        if self.frame_count % 5 == 0:
 
-        # RESULT
+            input_data = resized.astype(np.float32)
+
+            interpreter.set_tensor(
+                input_details[0]['index'],
+                input_data
+            )
+
+            interpreter.invoke()
+
+            preds = interpreter.get_tensor(
+                output_details[0]['index']
+            )
+
+            class_id = np.argmax(preds)
+
+            confidence = np.max(preds)
+
+            self.last_label = labels[class_id]
+            self.last_conf = confidence
+
+        label = self.last_label
+        confidence = self.last_conf
+
+        # =========================================
+        # RESULT TEXT
+        # =========================================
         cv2.putText(
             img,
             f"Huruf : {label}",
