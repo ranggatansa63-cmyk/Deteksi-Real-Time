@@ -6,3 +6,4 @@ __pycache__/
 *.pyc
 
 model_bisindo_fixed.h5
+model_bisindo.tflite
